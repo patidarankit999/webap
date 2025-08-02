@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Shri Lakshmi Nath Nidhi Bank - Daily Collection</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: orange;
+      margin: 0;
+      padding: 15px;
+    }
+    h1 {
+      text-align: center;
+      color: white;
+      font-size: 24px;
+      margin-bottom: 10px;
+    }
+    .form-box, .table-box {
+      background: #fff;
+      border-radius: 14px;
+      padding: 15px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+      margin-bottom: 20px;
+    }
+    input, button, select {
+      padding: 12px;
+      margin: 6px 0;
+      width: 100%;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      background-color: #ff5722;
+      color: white;
+      font-weight: bold;
+      border: none;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #e64a19;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14px;
+    }
+    table th, table td {
+      padding: 10px;
+      border: 1px solid #ccc;
+      text-align: center;
+    }
+    .total {
+      font-size: 18px;
+      font-weight: bold;
+      color: darkgreen;
+      text-align: center;
+    }
+    .delete-btn {
+      background-color: red;
+      padding: 5px 10px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+    @media screen and (max-width: 600px) {
+      table th, table td {
+        font-size: 12px;
+        padding: 8px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<h1>Shri Lakshmi Nath Nidhi Bank</h1>
+
+<div class="form-box">
+  <h3>📝 Daily Collection Entry</h3>
+  <input type="date" id="entryDate" />
+  <input type="text" id="name" placeholder="Customer Name" />
+  <input type="number" id="amount" placeholder="Amount (₹)" />
+  <input type="text" id="location" placeholder="Location" />
+  <button onclick="addEntry()">➕ Add Collection</button>
+</div>
+
+<div class="form-box">
+  <label for="filterDate"><b>📅 Select Date to View Entries</b></label>
+  <input type="date" id="filterDate" onchange="updateTable()" />
+</div>
+
+<div class="table-box">
+  <h3>📋 Entries on <span id="dateTitle">[Select a Date]</span></h3>
+  <table id="collectionTable">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Name</th>
+        <th>Amount</th>
+        <th>Location</th>
+        <th>Share</th>
+        <th>Delete</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <p class="total">Total: <span id="totalAmount">₹0</span></p>
+</div>
+
+<script>
+  let allData = JSON.parse(localStorage.getItem("yearlyCollections")) || {};
+
+  function formatDate(date) {
+    return new Date(date).toISOString().split("T")[0];
+  }
+
+  function addEntry() {
+    const date = formatDate(document.getElementById("entryDate").value || new Date());
+    const name = document.getElementById("name").value.trim();
+    const amount = document.getElementById("amount").value.trim();
+    const location = document.getElementById("location").value.trim();
+
+    if (!name || !amount || !location) {
+      alert("⚠️ Please fill all fields.");
+      return;
+    }
+
+    if (!allData[date]) allData[date] = [];
+
+    allData[date].push({ name, amount, location });
+    localStorage.setItem("yearlyCollections", JSON.stringify(allData));
+
+    document.getElementById("name").value = "";
+    document.getElementById("amount").value = "";
+    document.getElementById("location").value = "";
+    document.getElementById("entryDate").value = formatDate(new Date());
+
+    document.getElementById("filterDate").value = date;
+    updateTable();
+  }
+
+  function updateTable() {
+    const date = document.getElementById("filterDate").value;
+    const tbody = document.querySelector("#collectionTable tbody");
+    const dateTitle = document.getElementById("dateTitle");
+    tbody.innerHTML = "";
+    let total = 0;
+
+    dateTitle.innerText = date || "[Select a Date]";
+
+    if (date && allData[date]) {
+      allData[date].forEach((entry, index) => {
+        total += Number(entry.amount);
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${index + 1}</td>
+          <td>${entry.name}</td>
+          <td>₹${entry.amount}</td>
+          <td>${entry.location}</td>
+          <td><a href="https://wa.me/?text=${encodeURIComponent(
+            `Customer: ${entry.name}\nAmount: ₹${entry.amount}\nLocation: ${entry.location}`
+          )}" target="_blank">📤 WhatsApp</a></td>
+          <td><button class="delete-btn" onclick="deleteEntry('${date}', ${index})">🗑️</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    document.getElementById("totalAmount").innerText = "₹" + total;
+  }
+
+  function deleteEntry(date, index) {
+    if (confirm("❌ Delete this collection?")) {
+      allData[date].splice(index, 1);
+      if (allData[date].length === 0) {
+        delete allData[date];
+      }
+      localStorage.setItem("yearlyCollections", JSON.stringify(allData));
+      updateTable();
+    }
+  }
+
+  // Auto set today's date
+  window.onload = () => {
+    document.getElementById("entryDate").value = formatDate(new Date());
+    document.getElementById("filterDate").value = formatDate(new Date());
+    updateTable();
+  };
+</script>
+
+</body>
+</html>
